@@ -1,7 +1,6 @@
 package bit.minisys.minicc.semantic;
 
 import bit.minisys.minicc.parser.ast.*;
-import org.python.antlr.ast.Str;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -171,34 +170,12 @@ public class SymbolTableVisitor implements ASTVisitor {
     @Override
     public void visit(ASTExpression expression) throws Exception {
         if (expression != null) {
-            if (expression instanceof ASTArrayAccess) {
-                this.visit((ASTArrayAccess) expression);
-            } else if (expression instanceof ASTBinaryExpression) {
+            if (expression instanceof ASTBinaryExpression) {
                 this.visit((ASTBinaryExpression) expression);
-            } else if (expression instanceof ASTCastExpression) {
-                this.visit((ASTCastExpression) expression);
-            } else if (expression instanceof ASTCharConstant) {
-                this.visit((ASTCharConstant) expression);
-            } else if (expression instanceof ASTConditionExpression) {
-                this.visit((ASTConditionExpression) expression);
-            } else if (expression instanceof ASTFloatConstant) {
-                this.visit((ASTFloatConstant) expression);
-            } else if (expression instanceof ASTFunctionCall) {
+            }else if (expression instanceof ASTFunctionCall) {
                 this.visit((ASTFunctionCall) expression);
             } else if (expression instanceof ASTIdentifier) {
                 this.visit((ASTIdentifier) expression);
-            } else if (expression instanceof ASTIntegerConstant) {
-                this.visit((ASTIntegerConstant) expression);
-            } else if (expression instanceof ASTMemberAccess) {
-                this.visit((ASTMemberAccess) expression);
-            } else if (expression instanceof ASTPostfixExpression) {
-                this.visit((ASTPostfixExpression) expression);
-            } else if (expression instanceof ASTStringConstant) {
-                this.visit((ASTStringConstant) expression);
-            } else if (expression instanceof ASTUnaryExpression) {
-                this.visit((ASTUnaryExpression) expression);
-            } else if (expression instanceof ASTUnaryTypename) {
-                this.visit((ASTUnaryTypename) expression);
             }
 
         }
@@ -410,19 +387,17 @@ public class SymbolTableVisitor implements ASTVisitor {
 
     @Override
     public void visit(ASTStatement statement) throws Exception {
-        if(statement==null)
+        if (statement == null)
             return;
         if (statement instanceof ASTIterationStatement) {
-            this.visit((ASTIterationStatement)statement);
+            this.visit((ASTIterationStatement) statement);
         } else if (statement instanceof ASTIterationDeclaredStatement) {
-            this.visit((ASTIterationDeclaredStatement)statement);
-        }  else if (statement instanceof ASTBreakStatement) {
-            this.visit((ASTBreakStatement)statement);
+            this.visit((ASTIterationDeclaredStatement) statement);
+        } else if (statement instanceof ASTBreakStatement) {
+            this.visit((ASTBreakStatement) statement);
         } else if (statement instanceof ASTCompoundStatement) {
             this.visit((ASTCompoundStatement) statement);
-        } else if (statement instanceof ASTSelectionStatement) {
-            this.visit((ASTSelectionStatement) statement);
-        } else if (statement instanceof ASTExpressionStatement) {
+        }else if (statement instanceof ASTExpressionStatement) {
             this.visit((ASTExpressionStatement) statement);
         }
     }

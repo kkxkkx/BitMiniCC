@@ -1,4 +1,4 @@
-//int f();
+int f();
 int main(int a)
 {
 	int res = f();

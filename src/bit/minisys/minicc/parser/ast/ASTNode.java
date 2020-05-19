@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 
-import bit.minisys.minicc.internal.symbol.SymbolTable;
-
+import bit.minisys.minicc.semantic.SymbolTable;
+//import bit.minisys.minicc.internal.symbol.SymbolTable;
 
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,include = As.PROPERTY,property = "type",visible = false)

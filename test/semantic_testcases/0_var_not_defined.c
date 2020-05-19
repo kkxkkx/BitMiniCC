@@ -1,5 +1,5 @@
 //int f();
-int main()
+int main(int a)
 {
 	int res = f();
 	int c = a+1;

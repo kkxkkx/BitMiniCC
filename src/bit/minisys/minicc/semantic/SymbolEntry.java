@@ -1,17 +1,19 @@
 package bit.minisys.minicc.semantic;
 
 public class SymbolEntry {
-    public String name;
-    public String type;
-    public int Value;
+    private String name;
+    private String type;
 
-    public SymbolEntry(String name, String type) {
-        this.type = type;
+    SymbolEntry(String name, String type) {
         this.name = name;
+        this.type = type;
     }
-    public SymbolEntry(String name, String type,int value) {
-        this.type = type;
-        this.name = name;
-        this.Value=value;
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
     }
 }

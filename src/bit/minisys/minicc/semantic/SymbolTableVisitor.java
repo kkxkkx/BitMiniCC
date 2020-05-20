@@ -2,27 +2,30 @@ package bit.minisys.minicc.semantic;
 
 import bit.minisys.minicc.parser.ast.*;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import javax.lang.model.util.Types;
+import java.util.*;
 
 public class SymbolTableVisitor implements ASTVisitor {
     private SymbolTable global;
     private SymbolTable local;
     private SymbolTable func;
-    private boolean isFuncLocal;  //是否函数内部局部变量
+    private boolean isFuncLocal;       //是否函数内部局部变量
     private Map localSymbolTableMap = new LinkedHashMap();
     private ErrorDetect error;
     private String funcName;
     private int depth;
+    private boolean funcReturn;
+    private List gotoStat = new LinkedList();
+    private List labelStat = new LinkedList();
 
     public SymbolTableVisitor(SymbolTable global, ErrorDetect error) {
         this.global = global;
-        this.func = new SymbolTable();
-        this.local = new SymbolTable();
+        func = new SymbolTable();
+        local = new SymbolTable();
         isFuncLocal = false;
         this.error = error;
-        this.depth = 0;
+        depth = 0;
+        funcReturn = false;
     }
 
     @Override
@@ -77,11 +80,31 @@ public class SymbolTableVisitor implements ASTVisitor {
 
     @Override
     public void visit(ASTArrayDeclarator arrayDeclarator) throws Exception {
-
+        if (arrayDeclarator == null)
+            return;
+        if (arrayDeclarator.declarator instanceof ASTFunctionDeclarator)
+            error.addError("ArrayDeclarator:Array's Declarator can not be a functionDeclarator.");
+        else {
+            this.visit(arrayDeclarator.declarator);
+            this.visit(arrayDeclarator.expr);
+            if (arrayDeclarator.declarator == null)
+                error.addError("ArrayDeclarator:Array's declarator can not be null.");
+            else {
+                if (arrayDeclarator.declarator != null) {
+                    if (arrayDeclarator.declarator instanceof ASTVariableDeclarator) {
+                        String name = ((ASTVariableDeclarator) arrayDeclarator.declarator).identifier.value;
+                        int size = ((ASTIntegerConstant) arrayDeclarator.expr).value;
+                        this.local.ArraySize.put(name, size);
+                    }
+                }
+            }
+        }
     }
 
     @Override
     public void visit(ASTVariableDeclarator variableDeclarator) throws Exception {
+        if (variableDeclarator == null)
+            return;
         variableDeclarator.scope = this.local;
     }
 
@@ -172,7 +195,7 @@ public class SymbolTableVisitor implements ASTVisitor {
         if (expression != null) {
             if (expression instanceof ASTBinaryExpression) {
                 this.visit((ASTBinaryExpression) expression);
-            }else if (expression instanceof ASTFunctionCall) {
+            } else if (expression instanceof ASTFunctionCall) {
                 this.visit((ASTFunctionCall) expression);
             } else if (expression instanceof ASTIdentifier) {
                 this.visit((ASTIdentifier) expression);
@@ -211,12 +234,16 @@ public class SymbolTableVisitor implements ASTVisitor {
                     }
                 }
             }
+            //TODO 函数调用的参数个数、类型不匹配
         }
     }
 
     @Override
     public void visit(ASTGotoStatement gotoStat) throws Exception {
-
+        if (gotoStat == null)
+            return;
+        gotoStat.scope = this.local;
+        this.gotoStat.add(gotoStat.label.value);
     }
 
     @Override
@@ -299,7 +326,11 @@ public class SymbolTableVisitor implements ASTVisitor {
 
     @Override
     public void visit(ASTLabeledStatement labeledStat) throws Exception {
-
+        if (labeledStat == null)
+            return;
+        labeledStat.scope = this.local;
+        this.labelStat.add(labeledStat.label.value);
+        this.visit(labeledStat.stat);
     }
 
     @Override
@@ -314,7 +345,28 @@ public class SymbolTableVisitor implements ASTVisitor {
 
     @Override
     public void visit(ASTReturnStatement returnStat) throws Exception {
+        if (returnStat == null) return;
+        returnStat.scope = this.local;
+        this.localSymbolTableMap.put(this.funcName, this.local);
+        //返回以后不是函数内部
+        this.isFuncLocal = false;
+        if (returnStat.expr == null) {
+            String type = this.func.getType(this.funcName);
+            if (type.equals("void"))
+                error.addError("ReturnStatement:return type should be void.");
+        } else {
+            ASTExpression expression = (ASTExpression) returnStat.expr.getLast();
+            Iterator iterator = returnStat.expr.iterator();
+            while (iterator.hasNext()) {
+                ASTExpression tmp = (ASTExpression) iterator.next();
+                this.visit(tmp);
+            }
+//            if(expression.type==null){
+//                if(func.getType(funcName).equals(type))
+//                    error.addError("ReturnStatement:return type is not match with function.");
+//            }
 
+        }
     }
 
     @Override
@@ -358,6 +410,7 @@ public class SymbolTableVisitor implements ASTVisitor {
                     return;
                 }
                 this.func.addByName(this.funcName);
+                this.func.addNameType(this.funcName, type);
             }
 
             Iterator iterator = functionDefine.body.blockItems.iterator();
@@ -369,6 +422,18 @@ public class SymbolTableVisitor implements ASTVisitor {
                     this.visit((ASTDeclaration) node);
             }
 
+            iterator = this.gotoStat.iterator();
+            while (iterator.hasNext()) {
+                String label = (String) iterator.next();
+                if (!this.labelStat.contains(label))
+                    error.addError("Label [" + label + "] is not defined");
+            }
+
+            if (!this.funcReturn && !type.equals("void")) {
+                error.addError("Function [" + this.funcName + "] must have a return");
+            } else {
+                funcReturn = false;
+            }
         }
     }
 
@@ -397,8 +462,15 @@ public class SymbolTableVisitor implements ASTVisitor {
             this.visit((ASTBreakStatement) statement);
         } else if (statement instanceof ASTCompoundStatement) {
             this.visit((ASTCompoundStatement) statement);
-        }else if (statement instanceof ASTExpressionStatement) {
+        } else if (statement instanceof ASTExpressionStatement) {
             this.visit((ASTExpressionStatement) statement);
+        } else if (statement instanceof ASTReturnStatement) {
+            this.funcReturn = true;
+            this.visit((ASTReturnStatement) statement);
+        }else if (statement instanceof ASTGotoStatement) {
+            this.visit((ASTGotoStatement)statement);
+        } else if (statement instanceof ASTLabeledStatement) {
+            this.visit((ASTLabeledStatement)statement);
         }
     }
 
